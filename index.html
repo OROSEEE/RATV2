@@ -36,9 +36,11 @@
     <table>
       <thead>
         <tr>
-          <th>Date</th>
-          <th>Adresse</th>
-          <th>Commentaire</th>
+            <th>Date déclarée</th>
+            <th>Heure d’enregistrement</th>
+            <th>Adresse</th>
+            <th>Commentaire</th>
+
         </tr>
       </thead>
       <tbody id="reportsBody"></tbody>
@@ -50,7 +52,6 @@
 <!-- Leaflet -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<!-- FIREBASE + APP -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
   import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
@@ -123,7 +124,7 @@
       comment,
       lat: coords.lat,
       lon: coords.lon,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp() // 👈 heure exacte serveur
     });
 
     document.getElementById("formStatus").textContent = "Ajouté ✅";
@@ -144,25 +145,31 @@
     snapshot.forEach(doc => {
       const data = doc.data();
 
-      // tableau
+      let dateHeure = "";
+      if (data.createdAt && data.createdAt.toDate) {
+        const d = data.createdAt.toDate();
+        dateHeure = d.toLocaleString("fr-FR");
+      }
+
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${data.date}</td>
+        <td>${dateHeure}</td>
         <td>${data.address}</td>
         <td>${data.comment}</td>
       `;
       body.appendChild(tr);
 
-      // marker
       if (data.lat && data.lon) {
         L.marker([data.lat, data.lon])
           .addTo(markers)
-          .bindPopup(`<b>${data.address}</b><br>${data.comment}`);
+          .bindPopup(`<b>${data.address}</b><br>${data.comment}<br>${dateHeure}`);
       }
     });
   });
 
 </script>
+
 
 </body>
 </html>
