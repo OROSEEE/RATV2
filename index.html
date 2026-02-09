@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Signalements de rats - Paris 13e</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+
+<body>
+
+<header>
+  <h1>Signalements de rats – Paris 13e</h1>
+  <p>Signalements communautaires + Open Data Ville de Paris</p>
+</header>
+
+<div class="container">
+
+  <!-- FORMULAIRE -->
+  <section class="report">
+    <h2>Faire un signalement</h2>
+
+    <form id="reportForm">
+      <input id="address" type="text" placeholder="Adresse complète" required>
+      <input id="date" type="date" required>
+      <textarea id="comment" placeholder="Commentaire" required></textarea>
+      <button type="submit">Ajouter</button>
+      <span id="formStatus"></span>
+    </form>
+
+    <div id="map"></div>
+
+    <h3>Signalements récents</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Adresse</th>
+          <th>Commentaire</th>
+        </tr>
+      </thead>
+      <tbody id="reportsBody"></tbody>
+    </table>
+  </section>
+
+</div>
+
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- FIREBASE + APP -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAlkjNfp4WSYN7kUkVdUAEQgZCKlFHnGUc",
+    authDomain: "rats-f5b11.firebaseapp.com",
+    projectId: "rats-f5b11",
+    storageBucket: "rats-f5b11.appspot.com",
+    messagingSenderId: "1040343320667",
+    appId: "1:1040343320667:web:b391281c035721ce7b577e"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  await signInAnonymously(auth);
+
+  // =========================
+  // MAP
+  // =========================
+
+  const map = L.map('map').setView([48.8278, 2.36489], 14);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+  const markers = L.layerGroup().addTo(map);
+
+  // =========================
+  // GEOLOCALISATION
+  // =========================
+
+  async function geocode(address) {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.length) return null;
+    return {
+      lat: parseFloat(data[0].lat),
+      lon: parseFloat(data[0].lon)
+    };
+  }
+
+  // =========================
+  // FORM
+  // =========================
+
+  document.getElementById("reportForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const address = document.getElementById("address").value;
+    const date = document.getElementById("date").value;
+    const comment = document.getElementById("comment").value;
+
+    document.getElementById("formStatus").textContent = "Recherche...";
+
+    const coords = await geocode(address);
+    if (!coords) {
+      document.getElementById("formStatus").textContent = "Adresse introuvable";
+      return;
+    }
+
+    await addDoc(collection(db, "reports"), {
+      address,
+      date,
+      comment,
+      lat: coords.lat,
+      lon: coords.lon,
+      createdAt: serverTimestamp()
+    });
+
+    document.getElementById("formStatus").textContent = "Ajouté ✅";
+    map.setView([coords.lat, coords.lon], 16);
+  });
+
+  // =========================
+  // LISTENER TEMPS RÉEL
+  // =========================
+
+  const q = query(collection(db, "reports"), orderBy("createdAt", "desc"));
+
+  onSnapshot(q, (snapshot) => {
+    const body = document.getElementById("reportsBody");
+    body.innerHTML = "";
+    markers.clearLayers();
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+
+      // tableau
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${data.date}</td>
+        <td>${data.address}</td>
+        <td>${data.comment}</td>
+      `;
+      body.appendChild(tr);
+
+      // marker
+      if (data.lat && data.lon) {
+        L.marker([data.lat, data.lon])
+          .addTo(markers)
+          .bindPopup(`<b>${data.address}</b><br>${data.comment}`);
+      }
+    });
+  });
+
+</script>
+
+</body>
+</html>
