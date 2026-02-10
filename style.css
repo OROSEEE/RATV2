@@ -57,3 +57,44 @@ th, td {
   padding: 8px;
   border-bottom: 1px solid #333;
 }
+
+.table-container {
+    margin-top: 40px;
+}
+
+.table-container h2 {
+    margin-bottom: 15px;
+}
+
+.table-container iframe {
+    width: 100%;
+    height: 500px;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+.container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: auto;
+}
+
+.map-container {
+    position: relative;
+    width: 100%;
+    padding-bottom: 70%;
+    height: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+.map-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
