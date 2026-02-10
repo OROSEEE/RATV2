@@ -82,7 +82,7 @@ th, td {
 
 .map-container {
     position: relative;
-    width: 70%;
+    width: 100%;
     padding-bottom: 70%;
     height: 0;
     overflow: hidden;
@@ -93,8 +93,11 @@ th, td {
 .map-container iframe {
     position: absolute;
     top: 0;
-    left: 0;
+    left: 10%;
     width: 80%;
     height: 80%;
     border: none;
+}
+h3 {
+    margin-left: 10%;
 }
